@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+        <title>FrameMarkerTransforms1</title>
+        <link rel="stylesheet" href="css/jslog.css" />
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+        <meta name="arenabled" />
+  </head>
+  <body>
+  <script src="http://argon.gatech.edu/argon_o.js"></script>
+	<script src="js/jslog.js"></script>
+	<script src="js/three.js"></script>
+	<script type="text/javascript">
+	var trackedObject = null;
+	var frameMarker = null;
+	var lastSuccessful = null;
+	var logAcceleration = false;
+
+	var dataBase = 
+	{
+    image : "assets/imageMural.jpg",
+    markedId : 0,
+    widthRatio : 7,   //Mural width/marker width
+    heightRatio : 4,   //Mural height/marker height
+  }
+
+  var myAppController =
+  {
+      onArgonReady : function()
+      {
+        var markerId = 0;
+
+        frameMarker   = new ARGON.FrameMarkerTarget (markerId, "FrameMarker"+markerId, 500);
+        trackedObject = new ARGON.TrackedObject();
+        trackedObject.setTarget(frameMarker);
+
+        texture = THREE.ImageUtils.loadTexture("assets/imageMural.jpg");
+        //imagePlane = new THREE.Mesh( new THREE.PlaneGeometry( 6000, 6000 ), new THREE.MeshBasicMaterial({map: texture}) );
+        //imagePlane = new THREE.Mesh( new THREE.PlaneGeometry( 6000, 6000 ), new THREE.MeshBasicMaterial( { color: 0xff5500 } ));
+        //imagePlane.rotation.set(90,0,0);
+        imagePlane = new THREE.Mesh( new THREE.SphereGeometry( 1000, 8, 8 ), new THREE.MeshBasicMaterial( { color: 0xff5500 } ) );
+
+
+        ARGON.onRender = myAppController.onRender;
+        ARGON.World.add(imagePlane);
+        JSLOG.log("Here");
+      },
+
+		  onRender : function()
+		  {
+        if (frameMarker._visible)
+        {
+          lastSuccessful = trackedObject.threeObject3D.matrix.decompose()[0];
+        }
+			},
+
+			onTimer : function()
+			{
+        if (!frameMarker._visible)
+        {
+          cameraTracker.sufficientTimeElapsed = true;
+        }
+			},
+			
+			onGridChanged : function(grid)
+			{
+			}
+  }
+
+  var cameraTracker = 
+  {
+      initAlpha: 0,
+
+      sufficientTimeElapsed: true,
+
+      onRotation: function(event)
+      {
+        if (lastSuccessful != null)
+        {
+          if (!frameMarker._visible && cameraTracker.sufficientTimeElapsed)
+          {
+            //Perform smoothening out of the events?
+            var grid = cameraTracker.getGridFor(event);
+            myAppController.onGridChanged(grid);
+          }
+          else
+          {
+            cameraTracker.initAlpha = event.alpha;
+          }
+          cameraTracker.getGridFor(event);
+        }
+      },
+      
+      getGridFor: function(event)
+      {
+        if (event.alpha > 320 || event.alpha < 40)
+        {
+          return 1;
+        }
+        else if (event.alpha >= 40 && event.alpha < 120)
+        {
+          return 2;
+        }
+        else if (event.alpha >= 120 && event.alpha < 200)
+        {
+          return 3;
+        }
+        else
+        {
+          return 4;
+        }
+      }
+  }
+
+			document.addEventListener("AR.ArgonReadyEvent", myAppController.onArgonReady);
+			window.setInterval(myAppController.onTimer, 3000);
+      window.addEventListener("deviceorientation", cameraTracker.onRotation, false);      
+        </script>	
+    </body>
+</html>
